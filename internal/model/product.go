@@ -31,5 +31,5 @@ type ItemEvent struct {
 	ID     uint64
 	Type   EventType
 	Status EventStatus
-	Entity *Item
+	Item   *Item
 }
