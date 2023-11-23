@@ -1,104 +1,77 @@
 package ordermanager
 
 import (
-	"context"
-	"github.com/passsquale/product-item-api/internal/app/cleaner"
-	"github.com/passsquale/product-item-api/internal/app/repo"
-	"github.com/passsquale/product-item-api/internal/app/sender"
+	"errors"
 	"github.com/passsquale/product-item-api/internal/model"
-	"log"
 	"sync"
-	"time"
 )
 
-type Producer interface {
-	Start()
-	Close()
+var (
+	ErrIncorrectOrder = errors.New("has registred with incorrect order")
+)
+
+type OrderManager interface {
+	ApproveOrder(incomingEvent model.ItemEvent) bool
+	RegisterEvent(incomingEvent model.ItemEvent) error
 }
 
-type producer struct {
-	producerCount uint64
-
-	cleanerChannel chan<- cleaner.PackageCleanerEvent
-
-	// maximumKeepOrderAttempts model.TimesDefered
-	// orderManager             ordermanager.OrderManager
-	sender        sender.EventSender
-	eventsChannel chan model.ItemEvent
-
-	wg     *sync.WaitGroup
-	cancel context.CancelFunc
-}
-
-type ProducerConfig struct {
-	// maximumKeepOrderAttempts model.TimesDefered
-	ProducerCount  uint64
-	Repo           repo.EventRepo
-	Sender         sender.EventSender
-	CleanerChannel chan<- cleaner.PackageCleanerEvent
-	EventsChannel  chan model.ItemEvent
-}
-
-func NewKafkaProducer(cfg ProducerConfig) Producer {
-
-	wg := &sync.WaitGroup{}
-
-	return &producer{
-		producerCount:  cfg.ProducerCount,
-		cleanerChannel: cfg.CleanerChannel,
-		sender:         cfg.Sender,
-		eventsChannel:  cfg.EventsChannel,
-		wg:             wg,
-		cancel: func() {
-		},
+func NewOrderManager() OrderManager {
+	return &orderManager{
+		mu:       &sync.Mutex{},
+		ordermap: make(map[uint64]model.EventType),
 	}
 }
 
-func (p *producer) runHandler(ctx context.Context) {
-	for {
-		select {
-		case event := <-p.eventsChannel:
-			switch err := p.sender.Send(&event); err {
-			case nil:
-				p.cleanerChannel <- cleaner.PackageCleanerEvent{
-					Status:  cleaner.Ok,
-					EventID: event.ID,
-				}
-			default:
-				log.Println(event, err)
-				p.cleanerChannel <- cleaner.PackageCleanerEvent{
-					Status:  cleaner.Fail,
-					EventID: event.ID,
-				}
-			}
+type orderManager struct {
+	mu       *sync.Mutex
+	ordermap map[uint64]model.EventType
+}
 
-		case <-ctx.Done():
-			return
+func (o *orderManager) ApproveOrder(incomingEvent model.ItemEvent) bool {
+	o.mu.Lock()
+	defer o.mu.Unlock()
+
+	prevEventType, ok := o.ordermap[incomingEvent.Item.ID]
+
+	switch incomingEvent.Type {
+	case model.Created:
+		if !ok {
+			return true
+		}
+
+	case model.Updated, model.Removed:
+		if ok && (prevEventType == model.Created || prevEventType == model.Updated) {
+			return true
 		}
 	}
+
+	return false
 }
 
-func (p *producer) Start() {
-	ctx, cancel := context.WithCancel(context.Background())
-	p.cancel = cancel
+func (o *orderManager) RegisterEvent(incomingEvent model.ItemEvent) error {
+	o.mu.Lock()
+	defer o.mu.Unlock()
 
-	for i := uint64(0); i < p.producerCount; i++ {
-		p.wg.Add(1)
-		go func() {
-			defer p.wg.Done()
-			p.runHandler(ctx)
-		}()
+	prevEventType, ok := o.ordermap[incomingEvent.Item.ID]
+
+	switch incomingEvent.Type {
+	case model.Created:
+		o.ordermap[incomingEvent.Item.ID] = model.Created
+		if !ok {
+			return nil
+		}
+
+	case model.Updated:
+		o.ordermap[incomingEvent.Item.ID] = model.Updated
+		if ok && (prevEventType == model.Created || prevEventType == model.Updated) {
+			return nil
+		}
+
+	case model.Removed:
+		delete(o.ordermap, incomingEvent.Item.ID)
+		if ok && (prevEventType == model.Created || prevEventType == model.Updated) {
+			return nil
+		}
 	}
-
-	log.Printf("producer started with %d workers", p.producerCount)
-}
-
-func (p *producer) Close() {
-
-	for len(p.eventsChannel) != 0 {
-		time.Sleep(250 * time.Millisecond)
-	}
-
-	p.cancel()
-	p.wg.Wait()
+	return ErrIncorrectOrder
 }
