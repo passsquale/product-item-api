@@ -1,0 +1,33 @@
+version: v1
+plugins:
+  - name: go
+    out: pkg/product-item-api
+    opt:
+      - paths=import
+    strategy: directory
+
+  - name: go-grpc
+    out: pkg/product-item-api
+    opt:
+      - paths=import
+    strategy: directory
+
+  - name: grpc-gateway
+    out: pkg/product-item-api
+    opt:
+      - logtostderr=true
+      - paths=import
+    strategy: directory
+
+  - name: validate
+    out: pkg/product-item-api
+    opt:
+      - lang=go
+    strategy: directory
+
+  - name: openapiv2
+    path: protoc-gen-openapiv2
+    out: swagger
+    opt:
+      - generate_unbound_methods=true
+    strategy: directory
