@@ -16,7 +16,7 @@ const (
 	Fail
 )
 
-type PackageCleanerEvent struct {
+type ItemCleanerEvent struct {
 	Status  SenderStatus
 	EventID uint64
 }
@@ -28,7 +28,7 @@ type Cleaner interface {
 
 type cleaner struct {
 	cleanerCount          int
-	cleanerChannel        <-chan PackageCleanerEvent
+	cleanerChannel        <-chan ItemCleanerEvent
 	repo                  repo.EventRepo
 	batchSize             uint64
 	forcedCleanupInterval time.Duration
@@ -42,7 +42,7 @@ type CleanerConfig struct {
 	WorkerCount      int
 	CleanerBatchSize uint64
 	Repo             repo.EventRepo
-	CleanerChannel   <-chan PackageCleanerEvent
+	CleanerChannel   <-chan ItemCleanerEvent
 	CleanupInterval  time.Duration
 }
 

@@ -1,13 +1,14 @@
 package consumer
 
 import (
+	"github.com/passsquale/product-item-api/internal/mocks"
+	"github.com/passsquale/product-item-api/internal/model"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/hablof/logistic-package-api/internal/mocks"
-	"github.com/hablof/logistic-package-api/internal/model"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -26,37 +27,36 @@ func TestConsumer(t *testing.T) {
 
 	for _, testcase := range cases {
 		t.Run(testcase.name, func(t *testing.T) {
-			eventsChannel := make(chan<- model.PackageEvent, 100)
+			eventsChannel := make(chan<- model.ItemEvent, 100)
 
 			mockController := gomock.NewController(t)
 			defer mockController.Finish()
 			mockRepo := mocks.NewMockEventRepo(mockController)
 
-			entityID := uint64(0)
-			entityIDMutex := sync.Mutex{}
+			itemID := uint64(0)
+			itemIDMutex := sync.Mutex{}
 
 			gomock.InOrder(
-				mockRepo.EXPECT().Lock(testcase.batchSize).Times(testcase.correctDbLocks).DoAndReturn(func(batchSize uint64) ([]model.PackageEvent, error) {
-					entityIDMutex.Lock()
-					output := make([]model.PackageEvent, 0, batchSize)
+				mockRepo.EXPECT().Lock(testcase.batchSize).Times(testcase.correctDbLocks).DoAndReturn(func(batchSize uint64) ([]model.ItemEvent, error) {
+					itemIDMutex.Lock()
+					output := make([]model.ItemEvent, 0, batchSize)
 					for i := uint64(0); i < batchSize; i++ {
-						e := model.PackageEvent{
-							ID:      entityID,
-							Type:    model.Created,
-							Status:  model.Processed,
-							Defered: 0,
-							Entity: &model.Package{
-								ID: entityID,
+						e := model.ItemEvent{
+							ID:     itemID,
+							Type:   model.Created,
+							Status: model.Processed,
+							Item: &model.Item{
+								ID: itemID,
 							},
 						}
-						entityID++
+						itemID++
 						output = append(output, e)
 					}
-					entityIDMutex.Unlock()
+					itemIDMutex.Unlock()
 					time.Sleep(100 * time.Millisecond)
 					return output, nil
 				}),
-				mockRepo.EXPECT().Lock(testcase.batchSize).AnyTimes().Return([]model.PackageEvent{}, nil),
+				mockRepo.EXPECT().Lock(testcase.batchSize).AnyTimes().Return([]model.ItemEvent{}, nil),
 			)
 
 			cosumerCfg := ConsumerConfig{

@@ -18,7 +18,7 @@ type Producer interface {
 
 type producer struct {
 	producerCount  uint64
-	cleanerChannel chan<- cleaner.PackageCleanerEvent
+	cleanerChannel chan<- cleaner.ItemCleanerEvent
 	sender         sender.EventSender
 	eventsChannel  chan model.ItemEvent
 
@@ -30,7 +30,7 @@ type ProducerConfig struct {
 	ProducerCount  uint64
 	Repo           repo.EventRepo
 	Sender         sender.EventSender
-	CleanerChannel chan<- cleaner.PackageCleanerEvent
+	CleanerChannel chan<- cleaner.ItemCleanerEvent
 	EventsChannel  chan model.ItemEvent
 }
 
@@ -55,13 +55,13 @@ func (p *producer) runHandler(ctx context.Context) {
 		case event := <-p.eventsChannel:
 			switch err := p.sender.Send(&event); err {
 			case nil:
-				p.cleanerChannel <- cleaner.PackageCleanerEvent{
+				p.cleanerChannel <- cleaner.ItemCleanerEvent{
 					Status:  cleaner.Ok,
 					EventID: event.ID,
 				}
 			default:
 				log.Println(event, err)
-				p.cleanerChannel <- cleaner.PackageCleanerEvent{
+				p.cleanerChannel <- cleaner.ItemCleanerEvent{
 					Status:  cleaner.Fail,
 					EventID: event.ID,
 				}
