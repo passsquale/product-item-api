@@ -6,28 +6,33 @@ import "validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/passsquale/product-item-api/pkg/product-item-api;product_item_api";
+option go_package = "passsquale/product-item-api;product_item_api";
 
-// OmpTemplateApiService - Service for working with templates
-service OmpTemplateApiService {
-  // DescribeTemplateV1 - Describe a template
-  rpc DescribeTemplateV1(DescribeTemplateV1Request) returns (DescribeTemplateV1Response) {
+// ProductItemApiService - Service for working with templates
+service ProductItemApiService {
+  // DescribeItemV1 - Describe a template
+  rpc DescribeTemplateV1(DescribeItemV1Request) returns (DescribeItemV1Response) {
     option (google.api.http) = {
-      get: "/v1/templates/{template_id}"
+      get: "/v1/items/{ItemID}"
     };
   }
 }
-
-message Template {
-  uint64 id  = 1;
-  uint64 foo = 2;
-  google.protobuf.Timestamp created = 3;
+message MaybeTimestamp{
+  google.protobuf.Timestamp Time = 1;
+}
+message Item {
+  uint64 ID  = 1;
+  uint64 OwnerID = 2;
+  uint64 ProductID = 3;
+  string Title = 4;
+  google.protobuf.Timestamp Created = 5;
+  MaybeTimestamp Updated = 6;
 }
 
-message DescribeTemplateV1Request {
-  uint64 template_id = 1 [(validate.rules).uint64.gt = 0];
+message DescribeItemV1Request {
+  uint64 ItemID = 1 [(validate.rules).uint64.gt = 0];
 }
 
-message DescribeTemplateV1Response {
-  Template value = 1;
+message DescribeItemV1Response {
+  Item value = 1;
 }

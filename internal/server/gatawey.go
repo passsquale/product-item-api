@@ -7,6 +7,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
+	product_item_api "github.com/passsquale/product-item-api/pkg/product-item-api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog/log"
@@ -39,10 +40,9 @@ func createGatewayServer(grpcAddr, gatewayAddr string) *http.Server {
 	}
 
 	mux := runtime.NewServeMux()
-	if err := pb.RegisterOmpTemplateApiServiceHandler(context.Background(), mux, conn); err != nil {
+	if err := product_item_api.RegisterProductItemApiServiceHandler(context.Background(), mux, conn); err != nil {
 		log.Fatal().Err(err).Msg("Failed registration handler")
 	}
-
 	gatewayServer := &http.Server{
 		Addr:    gatewayAddr,
 		Handler: tracingWrapper(mux),

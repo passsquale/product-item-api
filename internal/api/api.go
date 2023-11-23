@@ -3,6 +3,7 @@ package api
 import (
 	"context"
 	"github.com/passsquale/product-item-api/internal/repo"
+	product_item_api "github.com/passsquale/product-item-api/pkg/product-item-api"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/rs/zerolog/log"
@@ -17,20 +18,20 @@ var (
 	})
 )
 
-type templateAPI struct {
-	pb.UnimplementedOmpTemplateApiServiceServer
+type itemAPI struct {
+	product_item_api.UnimplementedProductItemApiServiceServer
 	repo repo.Repo
 }
 
 // NewTemplateAPI returns api of omp-template-api service
-func NewTemplateAPI(r repo.Repo) pb.OmpTemplateApiServiceServer {
-	return &templateAPI{repo: r}
+func NewTemplateAPI(r repo.Repo) product_item_api.ProductItemApiServiceServer {
+	return &itemAPI{repo: r}
 }
 
-func (o *templateAPI) DescribeTemplateV1(
+func (o *itemAPI) DescribeTemplateV1(
 	ctx context.Context,
-	req *pb.DescribeTemplateV1Request,
-) (*pb.DescribeTemplateV1Response, error) {
+	req *product_item_api.DescribeItemV1Request,
+) (*product_item_api.DescribeItemV1Response, error) {
 
 	if err := req.Validate(); err != nil {
 		log.Error().Err(err).Msg("DescribeTemplateV1 - invalid argument")
@@ -38,26 +39,25 @@ func (o *templateAPI) DescribeTemplateV1(
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	template, err := o.repo.DescribeTemplate(ctx, req.TemplateId)
+	item, err := o.repo.DescribeTemplate(ctx, req.ItemID)
 	if err != nil {
 		log.Error().Err(err).Msg("DescribeTemplateV1 -- failed")
 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	if template == nil {
-		log.Debug().Uint64("templateId", req.TemplateId).Msg("template not found")
+	if item == nil {
+		log.Debug().Uint64("templateId", req.ItemID).Msg("item not found")
 		totalTemplateNotFound.Inc()
 
-		return nil, status.Error(codes.NotFound, "template not found")
+		return nil, status.Error(codes.NotFound, "item not found")
 	}
 
-	log.Debug().Msg("DescribeTemplateV1 - success")
+	log.Debug().Msg("DescribeItemV1 - success")
 
-	return &pb.DescribeTemplateV1Response{
-		Value: &pb.Template{
-			Id:  template.ID,
-			Foo: template.Foo,
+	return &product_item_api.DescribeItemV1Response{
+		Value: &product_item_api.Item{
+			ID: item.ID,
 		},
 	}, nil
 }

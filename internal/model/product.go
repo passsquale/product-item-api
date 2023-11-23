@@ -1,17 +1,22 @@
 package model
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 type Item struct {
-	ID      uint64
-	OwnerId uint64
-	ProductId uint64
+	ID        uint64
+	OwnerID   uint64
+	ProductID uint64
 	Title     string
+	Created   time.Time
+	Updated   *time.Time
 }
 
 func (i *Item) String() string {
 	return fmt.Sprintf("Item{id:%v, ownerId:%v, pruductId:%v, title:%v}",
-		i.ID, i.OwnerId, i.ProductId, i.Title)
+		i.ID, i.OwnerID, i.ProductID, i.Title)
 }
 
 type EventType uint8

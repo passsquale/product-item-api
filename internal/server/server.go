@@ -4,8 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/jmoiron/sqlx"
+	"github.com/passsquale/product-item-api/internal/api"
 	"github.com/passsquale/product-item-api/internal/config"
+	"github.com/passsquale/product-item-api/internal/repo"
+	product_item_api "github.com/passsquale/product-item-api/pkg/product-item-api"
 	"github.com/rs/zerolog/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
@@ -17,14 +25,9 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpcrecovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
-	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	grpc_opentracing "github.com/grpc-ecosystem/go-grpc-middleware/tracing/opentracing"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 )
 
-/ GrpcServer is gRPC server
+// GrpcServer is gRPC server
 type GrpcServer struct {
 	db        *sqlx.DB
 	batchSize uint
@@ -103,7 +106,7 @@ func (s *GrpcServer) Start(cfg *config.Config) error {
 
 	r := repo.NewRepo(s.db, s.batchSize)
 
-	pb.RegisterOmpTemplateApiServiceServer(grpcServer, api.NewTemplateAPI(r))
+	product_item_api.RegisterProductItemApiServiceServer(grpcServer, api.NewTemplateAPI(r))
 	grpc_prometheus.EnableHandlingTimeHistogram()
 	grpc_prometheus.Register(grpcServer)
 
