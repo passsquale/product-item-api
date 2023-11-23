@@ -3,15 +3,15 @@ package model
 import "fmt"
 
 type Item struct {
-	Id        uint64
-	OwnerId   uint64
+	ID      uint64
+	OwnerId uint64
 	ProductId uint64
 	Title     string
 }
 
 func (i *Item) String() string {
 	return fmt.Sprintf("Item{id:%v, ownerId:%v, pruductId:%v, title:%v}",
-		i.Id, i.OwnerId, i.ProductId, i.Title)
+		i.ID, i.OwnerId, i.ProductId, i.Title)
 }
 
 type EventType uint8

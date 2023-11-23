@@ -100,7 +100,7 @@ func generate(count int) []model.ItemEvent {
 			Type:   model.Created,
 			Status: 0,
 			Item: &model.Item{
-				Id:        uint64(i),
+				ID:        uint64(i),
 				OwnerId:   uint64(1),
 				ProductId: uint64(2),
 				Title:     "",
